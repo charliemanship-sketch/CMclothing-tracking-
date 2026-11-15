@@ -1,1 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#173d35">
+<meta name="description" content="A private Vinted business manager to track stock, sales and profit.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Vinted Business Manager</title>
+<style>
+:root{--ink:#173d35;--muted:#687a73;--bg:#f4f7f4;--card:#fff;--line:#e3ebe5;--mint:#dcefe5;--green:#246b52;--red:#b64b45;--gold:#f4c96b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#1e302a;font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+header{background:var(--ink);color:white;padding:22px max(18px,calc((100vw - 980px)/2));padding-top:calc(20px + env(safe-area-inset-top))}
+header .top{display:flex;justify-content:space-between;align-items:center;gap:12px}header h1{font-size:21px;margin:0}header p{margin:4px 0 0;color:#c9ded5;font-size:13px}
+.wrap{max-width:980px;margin:auto;padding:18px 16px 90px}
+nav{display:flex;gap:7px;overflow:auto;padding:4px 0 14px;position:sticky;top:0;background:var(--bg);z-index:5}
+nav button{border:1px solid var(--line);background:white;color:var(--muted);border-radius:999px;padding:9px 14px;white-space:nowrap;font-weight:650}
+nav button.active{background:var(--ink);border-color:var(--ink);color:white}
+h2{font-size:18px;margin:8px 0 12px}h3{font-size:15px;margin:0 0 8px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:12px;box-shadow:0 2px 8px #173d3508}
+.metric small{display:block;color:var(--muted);font-size:12px}.metric strong{font-size:23px;display:block;margin-top:5px;letter-spacing:-.5px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.muted{color:var(--muted)}.positive{color:var(--green)}.negative{color:var(--red)}
+.progress{height:9px;background:#e8eee9;border-radius:20px;overflow:hidden;margin:10px 0}.progress span{height:100%;display:block;background:#3c8b69;border-radius:20px}
+button,.button{cursor:pointer;font:inherit}.primary{background:var(--ink);color:white;border:0;border-radius:11px;padding:11px 15px;font-weight:700}.secondary{background:white;border:1px solid var(--line);border-radius:11px;padding:10px 13px;color:var(--ink);font-weight:650}.danger{color:var(--red);border-color:#f0d8d5}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid #d8e2db;border-radius:10px;background:#fff;font:inherit;color:#1e302a}
+label{display:block;font-size:13px;color:var(--muted);font-weight:650;margin:11px 0 5px}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}.item strong{display:block}.pill{font-size:11px;padding:4px 8px;border-radius:20px;background:var(--mint);color:var(--green);font-weight:700}
+.actions{display:flex;gap:7px;flex-wrap:wrap}.actions button{font-size:12px;padding:7px 9px}
+.empty{text-align:center;padding:28px 12px;color:var(--muted)}
+.hidden{display:none!important}.barlabel{font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:18px}
+@media(max-width:650px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.metric strong{font-size:21px}.formgrid{grid-template-columns:1fr}header h1{font-size:19px}.wrap{padding-left:13px;padding-right:13px}}
+</style>
+</head>
+<body>
+<header><div class="top"><div><h1>Vinted Business Manager</h1><p>Your private stock, sales & profit dashboard</p></div><span class="pill" style="background:#dcefe5">PRIVATE</span></div></header>
+<main class="wrap">
+<nav id="nav">
+<button class="active" data-tab="overview">Overview</button><button data-tab="stock">Stock</button><button data-tab="sales">Sales</button><button data-tab="insights">Insights</button><button data-tab="settings">Settings</button>
+</nav>
+<section id="overview" class="panel">
+<div class="row"><h2>Business overview</h2><span class="muted" id="monthLabel"></span></div>
+<div class="grid">
+<div class="card metric"><small>Net profit this month</small><strong id="mProfit">£0.00</strong></div>
+<div class="card metric"><small>Sales revenue</small><strong id="mRevenue">£0.00</strong></div>
+<div class="card metric"><small>Items sold</small><strong id="mSold">0</strong></div>
+<div class="card metric"><small>Items in stock</small><strong id="mStock">0</strong></div>
+</div>
+<div class="card">
+<div class="row"><div><h3>Monthly net profit goal</h3><div class="muted">Target: <b id="goalText">£3,500.00</b></div></div><strong id="goalPercent">0%</strong></div>
+<div class="progress"><span id="goalBar" style="width:0%"></span></div>
+<div class="barlabel"><span id="goalSoFar">£0 earned</span><span id="goalRemaining">£3,500 to go</span></div>
+</div>
+<div class="card"><div class="row"><h3>Recent sales</h3><button class="secondary" onclick="switchTab('sales')">View all</button></div><div id="recentSales"></div></div>
+<div class="row"><h2>Quick actions</h2></div>
+<div class="actions"><button class="primary" onclick="openItemForm()">＋ Add stock item</button><button class="secondary" onclick="openSaleForm()">＋ Record a sale</button></div>
+</section>
 
+<section id="stock" class="panel hidden">
+<div class="row"><h2>Your stock</h2><button class="primary" onclick="openItemForm()">＋ Add item</button></div>
+<div class="card"><input id="stockSearch" placeholder="Search item, brand or category…" oninput="renderStock()"><div style="margin-top:9px"><select id="stockFilter" onchange="renderStock()"><option value="all">All items</option><option value="listed">Listed</option><option value="draft">Not listed</option></select></div></div>
+<div class="card" id="stockList"></div>
+</section>
+
+<section id="sales" class="panel hidden">
+<div class="row"><h2>Sales history</h2><button class="primary" onclick="openSaleForm()">＋ Record sale</button></div>
+<div class="card"><div id="salesList"></div></div>
+</section>
+
+<section id="insights" class="panel hidden">
+<h2>Business insights</h2>
+<div class="grid">
+<div class="card metric"><small>Average sale price</small><strong id="avgSale">£0.00</strong></div>
+<div class="card metric"><small>Average profit / sale</small><strong id="avgProfit">£0.00</strong></div>
+<div class="card metric"><small>All-time net profit</small><strong id="allProfit">£0.00</strong></div>
+<div class="card metric"><small>Sell-through (all-time)</small><strong id="sellThrough">0%</strong></div>
+</div>
+<div class="card"><h3>What to focus on</h3><div id="insightNotes" class="muted"></div></div>
+<div class="card"><h3>Monthly totals</h3><div id="monthlyTotals"></div></div>
+</section>
+
+<section id="settings" class="panel hidden">
+<h2>Settings & data</h2>
+<div class="card"><h3>Profit target</h3><label for="targetInput">Monthly net profit target (£)</label><input id="targetInput" type="number" min="0" step="50"><button class="primary" style="margin-top:10px" onclick="saveTarget()">Save target</button></div>
+<div class="card"><h3>Backup your business data</h3><p class="muted">Your data is saved on this device/browser. Export a backup regularly so you can move it or restore it later.</p><div class="actions"><button class="primary" onclick="exportBackup()">Download backup</button><button class="secondary" onclick="document.getElementById('importFile').click()">Restore backup</button><input id="importFile" type="file" accept="application/json" class="hidden" onchange="importBackup(event)"></div></div>
+<div class="card"><h3>Export sales</h3><button class="secondary" onclick="exportCSV()">Download sales CSV</button></div>
+<div class="card"><h3>Privacy</h3><p class="muted">This app stores your information in this browser on this device. It does not connect to Vinted, send your data to a server, or sync automatically between devices. Keep your backup file somewhere safe.</p><button class="secondary danger" onclick="clearData()">Delete all app data</button></div>
+</section>
+</main>
+
+<dialog id="itemDialog" style="border:0;border-radius:18px;width:min(560px,calc(100% - 24px));padding:20px">
+<div class="row"><h2 id="itemTitle">Add stock item</h2><button class="secondary" onclick="closeDialog('itemDialog')">✕</button></div>
+<form id="itemForm" onsubmit="saveItem(event)">
+<input type="hidden" id="itemId">
+<div class="formgrid">
+<div><label>Item name *</label><input id="itemName" required placeholder="e.g. Nike hoodie"></div>
+<div><label>Brand</label><input id="itemBrand" placeholder="e.g. Nike"></div>
+<div><label>Category</label><input id="itemCategory" placeholder="e.g. Hoodies"></div>
+<div><label>Purchase cost (£) *</label><input id="itemCost" type="number" min="0" step=".01" required></div>
+<div><label>Listing price (£)</label><input id="itemPrice" type="number" min="0" step=".01"></div>
+<div><label>Status</label><select id="itemStatus"><option value="listed">Listed</option><option value="draft">Not listed</option></select></div>
+<div><label>Date acquired</label><input id="itemDate" type="date"></div>
+</div>
+<label>Notes</label><textarea id="itemNotes" rows="2" placeholder="Size, condition, source…"></textarea>
+<button class="primary" style="width:100%;margin-top:15px">Save item</button>
+</form></dialog>
+
+<dialog id="saleDialog" style="border:0;border-radius:18px;width:min(560px,calc(100% - 24px));padding:20px">
+<div class="row"><h2>Record a sale</h2><button class="secondary" onclick="closeDialog('saleDialog')">✕</button></div>
+<form onsubmit="saveSale(event)">
+<label>Stock item *</label><select id="saleItem" required></select>
+<div class="formgrid">
+<div><label>Sale price (£) *</label><input id="salePrice" type="number" min="0" step=".01" required></div>
+<div><label>Fees / postage / other costs (£)</label><input id="saleFees" type="number" min="0" step=".01" value="0"></div>
+<div><label>Date sold *</label><input id="saleDate" type="date" required></div>
+</div>
+<p class="muted" id="salePreview">Enter a sale price to estimate profit.</p>
+<button class="primary" style="width:100%;margin-top:10px">Save sale</button>
+</form></dialog>
+
+<script>
+const KEY='vinted-business-manager-v1';
+let db=load();
+function blank(){return {target:3500,items:[],sales:[]}}
+function load(){try{return {...blank(),...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch(e){return blank()}}
+function persist(){localStorage.setItem(KEY,JSON.stringify(db));render()}
+const money=n=>'£'+(Number(n)||0).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+const today=()=>new Date().toISOString().slice(0,10);
+const month=()=>today().slice(0,7);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const profit=s=>Number(s.price)-Number(s.cost)-Number(s.fees||0);
+function switchTab(tab){document.querySelectorAll('.panel').forEach(x=>x.classList.add('hidden'));document.getElementById(tab).classList.remove('hidden');document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));if(tab==='stock')renderStock();if(tab==='sales')renderSales()}
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+function render(){
+ const mSales=db.sales.filter(s=>s.date?.startsWith(month()));const rev=mSales.reduce((a,s)=>a+Number(s.price),0),p=mSales.reduce((a,s)=>a+profit(s),0),sold=mSales.length,stock=db.items.filter(i=>!db.sales.some(s=>s.itemId===i.id)).length;
+ document.getElementById('monthLabel').textContent=new Date().toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+ document.getElementById('mProfit').textContent=money(p);document.getElementById('mRevenue').textContent=money(rev);document.getElementById('mSold').textContent=sold;document.getElementById('mStock').textContent=stock;
+ const pct=db.target>0?Math.max(0,p/db.target*100):0;document.getElementById('goalText').textContent=money(db.target);document.getElementById('goalPercent').textContent=Math.round(pct)+'%';document.getElementById('goalBar').style.width=Math.min(100,pct)+'%';document.getElementById('goalSoFar').textContent=money(p)+' earned';document.getElementById('goalRemaining').textContent=money(Math.max(0,db.target-p))+' to go';
+ const recent=[...db.sales].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4);document.getElementById('recentSales').innerHTML=recent.length?recent.map(s=>`<div class="item"><div><strong>${esc(s.name)}</strong><small class="muted">${esc(s.date)}</small></div><div style="text-align:right"><strong>${money(s.price)}</strong><small class="${profit(s)>=0?'positive':'negative'}">${money(profit(s))} profit</small></div></div>`).join(''):'<div class="empty">No sales recorded yet.</div>';
+ document.getElementById('targetInput').value=db.target;
+ const allP=db.sales.reduce((a,s)=>a+profit(s),0);document.getElementById('allProfit').textContent=money(allP);document.getElementById('avgSale').textContent=money(db.sales.length?db.sales.reduce((a,s)=>a+Number(s.price),0)/db.sales.length:0);document.getElementById('avgProfit').textContent=money(db.sales.length?allP/db.sales.length:0);document.getElementById('sellThrough').textContent=(db.items.length?Math.round(db.sales.length/db.items.length*100):0)+'%';
+ const slow=db.items.filter(i=>!db.sales.some(s=>s.itemId===i.id)&&i.status==='listed');document.getElementById('insightNotes').innerHTML=`<p>You have <b>${stock}</b> unsold items, including <b>${slow.length}</b> listed items. Review older listings, refresh photos and descriptions, and consider adjusting prices.</p><p>Average profit per recorded sale is <b>${money(db.sales.length?allP/db.sales.length:0)}</b>. Track all fees and postage to keep your net profit accurate.</p>`;
+ const months={};db.sales.forEach(s=>{let k=(s.date||'').slice(0,7);months[k]??={rev:0,profit:0,count:0};months[k].rev+=Number(s.price);months[k].profit+=profit(s);months[k].count++});document.getElementById('monthlyTotals').innerHTML=Object.keys(months).sort().reverse().map(k=>`<div class="item"><div><strong>${esc(k)}</strong><small class="muted">${months[k].count} sales · ${money(months[k].rev)} revenue</small></div><strong class="${months[k].profit>=0?'positive':'negative'}">${money(months[k].profit)}</strong></div>`).join('')||'<div class="empty">Your monthly results will appear here.</div>';
+ renderStock();renderSales();
+}
+function renderStock(){const q=(document.getElementById('stockSearch')?.value||'').toLowerCase(),f=document.getElementById('stockFilter')?.value||'all';let arr=db.items.filter(i=>(f==='all'||i.status===f)&&[i.name,i.brand,i.category].join(' ').toLowerCase().includes(q));document.getElementById('stockList').innerHTML=arr.length?arr.map(i=>{let sold=db.sales.some(s=>s.itemId===i.id);return `<div class="item"><div style="min-width:0"><strong>${esc(i.name)}</strong><small class="muted">${esc([i.brand,i.category].filter(Boolean).join(' · ')||'No brand/category')} · Cost ${money(i.cost)} · Ask ${money(i.price)}</small><div style="margin-top:5px"><span class="pill">${sold?'Sold':i.status==='listed'?'Listed':'Not listed'}</span></div></div><div class="actions"><button class="secondary" onclick="editItem('${i.id}')">Edit</button>${!sold?`<button class="secondary" onclick="sellItem('${i.id}')">Sell</button>`:''}<button class="secondary danger" onclick="deleteItem('${i.id}')">Delete</button></div></div>`}).join(''):'<div class="empty">No matching stock yet. Add your first item.</div>'}
+function renderSales(){let arr=[...db.sales].sort((a,b)=>b.date.localeCompare(a.date));document.getElementById('salesList').innerHTML=arr.length?arr.map(s=>`<div class="item"><div><strong>${esc(s.name)}</strong><small class="muted">${esc(s.date)} · Sale ${money(s.price)} · Costs ${money(Number(s.cost)+Number(s.fees||0))}</small></div><div style="text-align:right"><strong>${money(profit(s))}</strong><small class="muted">net profit</small><div><button class="secondary danger" onclick="deleteSale('${s.id}')">Remove</button></div></div></div>`).join(''):'<div class="empty">No sales recorded yet.</div>'}
+function openItemForm(){document.getElementById('itemForm').reset();document.getElementById('itemId').value='';document.getElementById('itemDate').value=today();document.getElementById('itemTitle').textContent='Add stock item';document.getElementById('itemDialog').showModal()}
+function editItem(id){let i=db.items.find(x=>x.id===id);if(!i)return;openItemForm();document.getElementById('itemTitle').textContent='Edit stock item';for(let k of ['id','name','brand','category','cost','price','status','date','notes']){let el=document.getElementById('item'+k[0].toUpperCase()+k.slice(1));if(el)el.value=i[k]??''}}
+function saveItem(e){e.preventDefault();let id=document.getElementById('itemId').value||crypto.randomUUID();let i={id,name:itemName.value.trim(),brand:itemBrand.value.trim(),category:itemCategory.value.trim(),cost:Number(itemCost.value),price:Number(itemPrice.value||0),status:itemStatus.value,date:itemDate.value,notes:itemNotes.value};let ix=db.items.findIndex(x=>x.id===id);if(ix>=0)db.items[ix]=i;else db.items.push(i);closeDialog('itemDialog');persist()}
+function deleteItem(id){if(!confirm('Delete this stock item? Any sale record for it will remain.'))return;db.items=db.items.filter(i=>i.id!==id);persist()}
+function openSaleForm(preselect){let sel=document.getElementById('saleItem');let available=db.items.filter(i=>!db.sales.some(s=>s.itemId===i.id));sel.innerHTML=available.map(i=>`<option value="${i.id}">${esc(i.name)} — cost ${money(i.cost)}</option>`).join('');if(preselect)sel.value=preselect;document.getElementById('saleDate').value=today();document.getElementById('salePrice').value='';document.getElementById('saleFees').value='0';document.getElementById('saleDialog').showModal();previewSale()}
+function sellItem(id){openSaleForm(id)}
+function previewSale(){let i=db.items.find(x=>x.id===document.getElementById('saleItem').value);let p=Number(document.getElementById('salePrice').value||0),f=Number(document.getElementById('saleFees').value||0);document.getElementById('salePreview').textContent=i?`Estimated net profit: ${money(p-i.cost-f)} (before any costs you haven't entered).`:'Choose an item to calculate profit.'}
+document.getElementById('saleItem').addEventListener('change',previewSale);document.getElementById('salePrice').addEventListener('input',previewSale);document.getElementById('saleFees').addEventListener('input',previewSale);
+function saveSale(e){e.preventDefault();let i=db.items.find(x=>x.id===saleItem.value);if(!i)return alert('Add a stock item first.');db.sales.push({id:crypto.randomUUID(),itemId:i.id,name:i.name,cost:Number(i.cost),price:Number(salePrice.value),fees:Number(saleFees.value||0),date:saleDate.value});closeDialog('saleDialog');persist()}
+function deleteSale(id){if(!confirm('Remove this sale record? The item will become unsold again.'))return;db.sales=db.sales.filter(s=>s.id!==id);persist()}
+function closeDialog(id){document.getElementById(id).close()}
+function saveTarget(){db.target=Math.max(0,Number(document.getElementById('targetInput').value||0));persist();alert('Monthly target saved.')}
+function exportBackup(){download('vinted-business-backup.json',JSON.stringify(db,null,2),'application/json')}
+function importBackup(e){let file=e.target.files[0];if(!file)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.items)||!Array.isArray(x.sales))throw Error();if(confirm('Replace the current app data with this backup?')){db={...blank(),...x};persist();alert('Backup restored.')}}catch(err){alert('That backup file is not valid.')}e.target.value=''};r.readAsText(file)}
+function exportCSV(){let rows=[['Date','Item','Sale price','Purchase cost','Fees/other costs','Net profit'],...db.sales.map(s=>[s.date,s.name,s.price,s.cost,s.fees,profit(s)])];let csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');download('vinted-sales.csv',csv,'text/csv')}
+function download(name,data,type){let a=document.createElement('a'),url=URL.createObjectURL(new Blob([data],{type}));a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
+function clearData(){if(confirm('This permanently deletes all items, sales and settings stored in this browser. Export a backup first if needed.')){db=blank();persist()}}
+render();
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body></html>
